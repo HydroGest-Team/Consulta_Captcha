@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: HydroGest Consulta Pública API
+  version: 1.0.0
+  description: API para consulta pública de estado de cuenta por código de contador
+tags:
+  - name: consulta
+    description: Endpoints de consulta pública
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Servidor local del microservicio
+paths:
+  /consulta/{codigoContador}:
+    get:
+      summary: Consultar estado de cuenta de un contador
+      operationId: consultarEstadoCuenta
+      tags:
+        - consulta
+      parameters:
+        - name: codigoContador
+          in: path
+          required: true
+          description: Código del contador a consultar
+          schema:
+            type: string
+            pattern: ^[A-Z0-9_-]{1,20}$
+            maxLength: 20
+      responses:
+        '200':
+          description: Consulta exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoCuenta'
+        '400':
+          description: Código de formato inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '404':
+          description: Contador no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '429':
+          description: Límite de peticiones por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+          headers:
+            Retry-After:
+              description: Segundos que faltan para que se reinicie la ventana
+              schema:
+                type: integer
+                minimum: 1
+components:
+  schemas:
+    EstadoCuenta:
+      type: object
+      properties:
+        codigoContador:
+          type: string
+          description: El código consultado
+        titular:
+          type: string
+          description: Nombre ENMASCARADO (primera palabra + inicial segunda + ***)
+        estado:
+          type: string
+          enum:
+            - AL_DIA
+            - PENDIENTE
+          description: 'AL_DIA si no hay saldo pendiente, PENDIENTE si hay saldo > 0'
+        saldoPendiente:
+          type: number
+          description: Total adeudado, en quetzales
+        ultimaLectura:
+          type: object
+          nullable: true
+          properties:
+            fecha:
+              type: string
+              format: date
+              description: Fecha de la última lectura
+            lectura:
+              type: number
+              description: Valor de la lectura actual
+            consumoM3:
+              type: number
+              description: Consumo en metros cúbicos
+        ultimosPagos:
+          type: array
+          items:
+            type: object
+            properties:
+              fecha:
+                type: string
+                format: date
+                description: Fecha del pago
+              monto:
+                type: number
+                description: Monto del pago
+          description: Últimos 5 pagos, del más reciente al más antiguo
+    ErrorRespuesta:
+      type: object
+      properties:
+        mensaje:
+          type: string
+          description: Mensaje en español apto para mostrar al cliente
+required:
+  - mensaje
