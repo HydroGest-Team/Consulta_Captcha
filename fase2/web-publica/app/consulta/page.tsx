@@ -1,39 +1,30 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form as FormBootstrap, Button, Input, Label, Alert } from 'react-bootstrap';
-import { ReactComponent as RecaptchaWidget } from './recaptcha-widget.svg';
-import 'bootstrap/dist/bootstrap.min.css';
+'use client';
+
+import { useRef, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function PaginaConsulta() {
   const [codigo, setCodigo] = useState('');
-  const [captchaResuelto, setCaptchaResuelto] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
-  const [resultado, setResultado] = useState(null);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [resultado, setResultado] = useState<unknown>(null);
+  const [error, setError] = useState<string | null>(null);
+  const captchaRef = useRef<ReCAPTCHA>(null);
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? '';
 
-  // Reiniciar captcha después de cada envío
-  useEffect(() => {
-    if (resultado || error) {
-      setTimeout(() => setCaptchaResuelto(false), 100);
-    }
-  }, [resultado, error]);
-
-  const manejarEnvio = async (e: React.MouseEvent) => {
+  const manejarEnvio = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setResultado(null);
     setCargando(true);
 
     try {
       const respuesta = await fetch('/api/consulta', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ codigo, token: captchaResuelto ? 'resuelto' : '' }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: codigo.trim().toUpperCase(), token }),
       });
-
-      const data = await respuesta.json();
+      const data = await respuesta.json().catch(() => ({}));
 
       if (respuesta.status === 200) {
         setResultado(data);
@@ -44,80 +35,71 @@ export default function PaginaConsulta() {
       } else if (respuesta.status === 400) {
         setError(data.mensaje || 'Solicitud inválida');
       } else {
-        setError('Error inesperado. Inténtalo de nuevo');
+        setError(data.mensaje || 'Error inesperado. Inténtalo de nuevo');
       }
-    } catch (err) {
+    } catch {
       setError('No se pudo conectar con el servicio');
     } finally {
       setCargando(false);
+      captchaRef.current?.reset();
+      setToken(null);
     }
   };
 
-  const manejarCambioCodigo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCodigo(e.target.value);
-    setError(null);
-  };
-
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center">
-      <div className="col-md-8 col-lg-5 p-4">
-        <FormBootstrap onSubmit={manejarEnvio} className="p-4 border rounded-3">
-          <h2 className="text-center mb-4 fw-bold">HydroGest - Consulta Pública</h2>
+    <main className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+      <div className="col-md-8 col-lg-5 p-3">
+        <form onSubmit={manejarEnvio} className="p-4 border rounded-3 bg-white">
+          <h1 className="h3 text-center mb-4 fw-bold">HydroGest - Consulta Pública</h1>
 
           {error && (
-            <Alert variant="danger" className="mb-3">
+            <div className="alert alert-danger" role="alert">
               {error}
-            </Alert>
-          )}
-
-          <div className="mb-3">
-            <Label htmlFor="codigoContador">Código del contador</Label>
-            <Input
-              id="codigoContador"
-              type="text"
-              value={codigo}
-              onChange={manejarCambioCodigo}
-              placeholder="Ej: HGC-2024-001"
-              required
-              disabled={cargando}
-              className={`
-                width: 100%;
-                padding: 10px;
-                font-size: 1rem;
-                border: 1px solid #ced4da;
-                border-radius: 4px;
-                box-sizing: border-box;
-              `}
-            />
-          </div>
-
-          {captchaResuelto ? null : (
-            <div className="mb-3">
-              <Label>Verificación de seguridad</Label>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span>Selecciona "No soy un robot"</span>
-                <button
-                  onClick={() => setCaptchaResuelto(true)}
-                  className="btn btn-link p-0 fs-6 text-primary"
-                  disabled={cargando}
-                >
-                  Verificar
-                </button>
-              </div>
             </div>
           )}
 
-          <Button type="submit" disabled={!codigo || !captchaResuelto || cargando}>
+          <div className="mb-3">
+            <label htmlFor="codigoContador" className="form-label">
+              Código del contador
+            </label>
+            <input
+              id="codigoContador"
+              type="text"
+              className="form-control"
+              value={codigo}
+              onChange={(e) => {
+                setCodigo(e.target.value);
+                setError(null);
+              }}
+              placeholder="Ej: HGC-2024-001"
+              maxLength={20}
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          <div className="mb-3">
+            <ReCAPTCHA ref={captchaRef} sitekey={siteKey} onChange={setToken} />
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary w-100"
+            disabled={!codigo.trim() || !token || cargando}
+          >
             {cargando ? 'Consultando...' : 'Consultar'}
-          </Button>
-        </FormBootstrap>
+          </button>
+        </form>
+
+        {resultado !== null && (
+          <div className="card mt-4" aria-live="polite">
+            <div className="card-body">
+              <h2 className="h5 card-title">Estado de cuenta</h2>
+              <pre className="mb-0 small">{JSON.stringify(resultado, null, 2)}</pre>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </main>
   );
 }

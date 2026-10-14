@@ -1,6 +1,4 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import 'bootstrap/dist/bootstrap.min.css';
 
 export default function Home() {
   return (
@@ -9,10 +7,8 @@ export default function Home() {
         <h1 className="fw-bold mb-3">HydroGest</h1>
         <p className="text-muted mb-4">Oficina municipal de agua potable</p>
         <div>
-          <Link href="/consulta" passHref>
-            <Button variant="primary" size="lg">
-              Iniciar Consulta Pública
-            </Button>
+          <Link href="/consulta" className="btn btn-primary btn-lg">
+            Iniciar Consulta Pública
           </Link>
         </div>
         <p className="mt-4 small text-muted">

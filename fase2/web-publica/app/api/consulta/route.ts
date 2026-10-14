@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server';
-import { writeFileSync } from 'fs';
-import { redirect } from 'next/navigation';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
-
-export async function POST(request) {
-  const body = await request.json();
+export async function POST(request: NextRequest) {
+  let body: { codigo?: string; token?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ mensaje: 'Cuerpo de la solicitud inválido' }, { status: 400 });
+  }
   const { codigo, token } = body;
 
   // 1. Validar que codigo y token existan
@@ -38,30 +35,18 @@ export async function POST(request) {
     );
   }
 
-  const urlVerificacion = 'https://www.google.com/recaptcha/api/siteverify';
-  const params = new URLSearchParams({
-    secret: secretoRecaptcha,
-    response: token,
-  });
-
   try {
-    const captchaResponse = await fetch(urlVerificacion, {
+    const captchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
       method: 'POST',
-      body: params,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      body: new URLSearchParams({ secret: secretoRecaptcha, response: token }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
-
     const resultadoCaptcha = await captchaResponse.json();
 
     if (!resultadoCaptcha.success) {
-      return NextResponse.json(
-        { mensaje: 'Captcha inválido o vencido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ mensaje: 'Captcha inválido o vencido' }, { status: 400 });
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { mensaje: 'Error al verificar el captcha con el servicio de Google' },
       { status: 500 }
@@ -70,23 +55,28 @@ export async function POST(request) {
 
   // 4. Llamar al microservicio con la IP real del cliente
   const serviceUrl = process.env.CONSULTA_SERVICE_URL || 'http://localhost:8081';
-  const ipCliente = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+  const ipCliente = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
 
   try {
-    const servicioResponse = await fetch(`${serviceUrl}/api/v1/consulta/${encodeURIComponent(codigo)}`, {
-      method: 'GET',
-      headers: {
-        'X-Forwarded-For': ipCliente,
-        'Accept': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    // Traducir la respuesta del microservicio
-    const data = await servicioResponse.json();
+    const servicioResponse = await fetch(
+      `${serviceUrl}/api/v1/consulta/${encodeURIComponent(codigo)}`,
+      {
+        method: 'GET',
+        headers: { 'X-Forwarded-For': ipCliente, Accept: 'application/json' },
+        cache: 'no-store',
+      }
+    );
+    const data = await servicioResponse.json().catch(() => ({}));
 
     if (servicioResponse.status === 200) {
       return NextResponse.json(data, { status: 200 });
+    }
+
+    if (servicioResponse.status === 400) {
+      return NextResponse.json(
+        { mensaje: data.mensaje || 'El código del contador es inválido' },
+        { status: 400 }
+      );
     }
 
     if (servicioResponse.status === 404) {
@@ -97,20 +87,19 @@ export async function POST(request) {
     }
 
     if (servicioResponse.status === 429) {
-      return NextResponse.json(
+      const respuesta = NextResponse.json(
         { mensaje: data.mensaje || 'Demasiadas peticiones. Inténtalo más tarde' },
         { status: 429 }
-      ).headers.set('Retry-After', data.retryAfter || '60');
+      );
+      respuesta.headers.set('Retry-After', String(data.retryAfter ?? 60));
+      return respuesta;
     }
 
-    // 5xx o respuestas inesperadas del microservicio
     return NextResponse.json(
       { mensaje: 'El servicio de consulta no está disponible en este momento' },
       { status: 502 }
     );
-
-  } catch (error) {
-    // Error de conexión o microservicio no responde
+  } catch {
     return NextResponse.json(
       { mensaje: 'No se pudo conectar con el servicio de consulta' },
       { status: 502 }
