@@ -1,54 +1,43 @@
 package com.hydrogest.consulta.exception;
 
+import com.hydrogest.consulta.api.model.ErrorRespuesta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "No encontrado",
-                ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorRespuesta> noEncontrado(NotFoundException ex) {
+        return respuesta(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(InvalidCodeException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCode(InvalidCodeException ex, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Solicitud inválida",
-                ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorRespuesta> codigoInvalido(InvalidCodeException ex) {
+        return respuesta(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(RuntimeException ex, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Error interno",
-                "Lo sentimos, ocurrió un error inesperado");
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorRespuesta> rutaInexistente(NoResourceFoundException ex) {
+        return respuesta(HttpStatus.NOT_FOUND, "Recurso no encontrado");
     }
 
-    public static class ErrorResponse {
-        private final int codigo;
-        private final String titulo;
-        private final String mensaje;
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorRespuesta> generico(Exception ex) {
+        log.error("Error no controlado en la consulta", ex);
+        return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servicio");
+    }
 
-        public ErrorResponse(int codigo, String titulo, String mensaje) {
-            this.codigo = codigo;
-            this.titulo = titulo;
-            this.mensaje = mensaje;
-        }
-
-        public int getCodigo() { return codigo; }
-        public String getTitulo() { return titulo; }
-        public String getMensaje() { return mensaje; }
+    private ResponseEntity<ErrorRespuesta> respuesta(HttpStatus status, String mensaje) {
+        ErrorRespuesta error = new ErrorRespuesta();
+        error.setMensaje(mensaje);
+        return ResponseEntity.status(status).body(error);
     }
 }

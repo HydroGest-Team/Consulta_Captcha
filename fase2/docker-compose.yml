@@ -4,7 +4,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      DB_URL: jdbc:mariadb://host.docker.internal:3306/hydrogest
+      DB_URL: jdbc:mariadb://host.docker.internal:3306/hidrogest
       DB_USER: hydro_ro
       DB_PASSWORD: ${HYDRO_RO_PASSWORD}
     extra_hosts:
