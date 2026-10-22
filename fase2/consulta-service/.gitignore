@@ -1,0 +1,8 @@
+target/
+*.env
+*.lock
+*.log
+.next/
+node_modules/
+/*.tar.gz
+/*.zip
