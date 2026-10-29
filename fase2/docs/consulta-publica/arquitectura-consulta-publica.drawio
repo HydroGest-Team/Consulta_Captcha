@@ -1,0 +1,127 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="m1" name="Consulta pública con captcha">
+    <mxGraphModel dx="1894" dy="764" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="980" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="m1v1" parent="1" style="text;html=1;fontSize=18;align=left;verticalAlign=middle;" value="&lt;b&gt;HidroGest · Fase 2 — Módulo: Consulta pública con captcha&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="900" x="67" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#2D7FF9;strokeWidth=2;dashed=1;dashPattern=8 4;verticalAlign=top;align=left;spacingLeft=12;spacingTop=4;fontStyle=1;fontSize=14;fontColor=#2D7FF9;arcSize=2;" value="Docker Compose (local) — fase2/docker-compose.yml" vertex="1">
+          <mxGeometry height="690" width="1310" x="297" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="&lt;b&gt;Cliente final&lt;/b&gt;&lt;br&gt;Navegador · sin login" vertex="1">
+          <mxGeometry height="70" width="180" x="27" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v4" parent="1" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#fffde7;strokeColor=#bfa600;align=left;spacingLeft=8;verticalAlign=top;fontSize=11;" value="&lt;b&gt;Notas&lt;/b&gt;&lt;br&gt;• El navegador solo llama a &lt;b&gt;/api/consulta&lt;/b&gt;; nunca al puerto 8081.&lt;br&gt;• La llave secreta del captcha vive solo en el servidor de Next.js.&lt;br&gt;• Respuesta 200: JSON &lt;i&gt;EstadoCuenta&lt;/i&gt; (código, titular enmascarado, estado AL_DIA / PENDIENTE, saldo pendiente, última lectura, últimos 5 pagos).&lt;br&gt;• Errores: 400 formato o captcha inválido · 404 contador inexistente · 429 límite excedido · 502 servicio caído." vertex="1">
+          <mxGeometry height="290" width="220" x="37" y="367.5" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f6ff;strokeColor=#6c8ebf;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=10;fontStyle=1;fontSize=13;arcSize=4;" value="web-publica · Next.js 14 · :3000" vertex="1">
+          <mxGeometry height="570" width="320" x="357" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;app/page.tsx&lt;/b&gt;&lt;br&gt;inicio · botón &quot;Iniciar Consulta Pública&quot;" vertex="1">
+          <mxGeometry height="60" width="250" x="392" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;app/consulta/page.tsx&lt;/b&gt;&lt;br&gt;formulario: código del contador&lt;br&gt;+ widget reCAPTCHA v2&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;(NEXT_PUBLIC_RECAPTCHA_SITE_KEY)&lt;/span&gt;&lt;br&gt;muestra tarjeta de estado o error" vertex="1">
+          <mxGeometry height="115" width="250" x="392" y="252.5" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;app/api/consulta/route.ts · BFF&lt;/b&gt;&lt;br&gt;&lt;div style=&#39;text-align:left;font-size:11px&#39;&gt;1. exige codigo y token → 400&lt;br&gt;2. valida ^[A-Z0-9_-]{1,20}$ → 400&lt;br&gt;3. verifica captcha con&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;RECAPTCHA_SECRET_KEY → 400&lt;br&gt;4. llama a CONSULTA_SERVICE_URL&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;reenviando X-Forwarded-For&lt;br&gt;5. traduce 200/400/404/429/502&lt;/div&gt;" vertex="1">
+          <mxGeometry height="195" width="250" x="392" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f6ff;strokeColor=#6c8ebf;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=10;fontStyle=1;fontSize=13;arcSize=4;" value="consulta-service · Spring Boot 3.3 · Java 21 · :8081" vertex="1">
+          <mxGeometry height="590" width="746" x="821" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;RateLimitInterceptor&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;registrado en WebConfig para /api/v1/consulta/**&lt;br&gt;ConcurrentHashMap por IP · 10 pet/min&lt;br&gt;excedido → 429 + Retry-After&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="240" x="851" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;ConsultaController&lt;/b&gt;&lt;br&gt;@RestController&lt;br&gt;implementa ConsultaApi" vertex="1">
+          <mxGeometry height="70" width="240" x="851" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;ConsultaService&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;@Transactional(readOnly = true)&lt;br&gt;valida formato → InvalidCodeException&lt;br&gt;busca contador → NotFoundException&lt;br&gt;saldo = Σ montos de lecturas sin pago&lt;br&gt;estado · última lectura · últimos 5 pagos&lt;/span&gt;" vertex="1">
+          <mxGeometry height="110" width="240" x="851" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;Repositorios (Spring Data)&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;Contador · Lectura · Pago&lt;br&gt;extienden Repository (sin save/delete)&lt;br&gt;entidades @Immutable · ddl-auto=none&lt;/span&gt;" vertex="1">
+          <mxGeometry height="85" width="240" x="851" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v14" parent="1" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#fffde7;strokeColor=#bfa600;align=center;spacingLeft=8;verticalAlign=middle;fontSize=11;" value="&lt;b&gt;openapi.yaml&lt;/b&gt;&lt;br&gt;contrato · fuente de verdad" vertex="1">
+          <mxGeometry height="70" width="240" x="1147" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;Swagger UI&lt;/b&gt;&lt;br&gt;/swagger-ui.html" vertex="1">
+          <mxGeometry height="55" width="240" x="1313" y="272.5" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;Enmascarador&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;nombre1 + inicial de apellido1 + ***&lt;br&gt;ej. &quot;Carlos G***&quot;&lt;/span&gt;" vertex="1">
+          <mxGeometry height="65" width="240" x="1247" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;b&gt;GlobalExceptionHandler&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;@RestControllerAdvice&lt;br&gt;400 · 404 · 500 → ErrorRespuesta&lt;/span&gt;" vertex="1">
+          <mxGeometry height="70" width="240" x="1247" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;dashed=1;fontSize=12;" value="&lt;b&gt;Google reCAPTCHA v2&lt;/b&gt;&lt;br&gt;siteverify" vertex="1">
+          <mxGeometry height="60" width="180" x="427" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff5f5;strokeColor=#b85450;strokeWidth=2;dashed=1;verticalAlign=top;align=center;fontStyle=1;fontSize=13;arcSize=4;fontColor=#b85450;" value="&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;XAMPP · fuera de Docker — 🔒 monolito NO SE MODIFICA" vertex="1">
+          <mxGeometry height="210" width="616" x="821" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v20" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" value="&lt;b&gt;MariaDB · base hidrogest&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;font-size:10px&#39;&gt;tb_clientes · tb_contadores&lt;br&gt;tb_lecturas · tb_pagos&lt;/span&gt;" vertex="1">
+          <mxGeometry height="140" width="240" x="851" y="809" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" value="&lt;b&gt;Laravel (Fase 1)&lt;/b&gt;&lt;br&gt;sin cambios" vertex="1">
+          <mxGeometry height="70" width="200" x="1216" y="844" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e22" edge="1" parent="1" source="m1v3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitDx=0;exitDy=0;" target="m1v7" value="1. abre /consulta">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="266.9999999999998" y="300" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m1e23" edge="1" parent="1" source="m1v6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;dashed=1;" target="m1v7" value="enlace">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e24" edge="1" parent="1" source="m1v7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;" target="m1v8" value="2. POST /api/consulta&lt;br&gt;{ codigo, token }">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e25" edge="1" parent="1" source="m1v8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;" target="m1v18" value="3. POST siteverify&lt;br&gt;(secret + token)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e26" edge="1" parent="1" source="m1v8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;exitX=1.003;exitY=0.564;exitDx=0;exitDy=0;exitPerimeter=0;" target="m1v10" value="4. GET /api/v1/consulta/{codigo}&lt;br&gt;+ X-Forwarded-For">
+          <mxGeometry relative="1" x="0.1192" as="geometry">
+            <Array as="points">
+              <mxPoint x="747" y="550" />
+              <mxPoint x="747" y="190" />
+            </Array>
+            <mxPoint x="648" y="458.5" as="sourcePoint" />
+            <mxPoint x="821" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m1e27" edge="1" parent="1" source="m1v10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;" target="m1v11" value="5. dentro del límite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e28" edge="1" parent="1" source="m1v11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;" target="m1v12" value="6. consultar(codigo)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e29" edge="1" parent="1" source="m1v12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;" target="m1v13" value="7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e30" edge="1" parent="1" source="m1v13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#2D5AA0;strokeWidth=2;dashed=1;" target="m1v20" value="8. SELECT · usuario hydro_ro (solo lectura)&lt;br&gt;host.docker.internal:3306">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e31" edge="1" parent="1" source="m1v12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;dashed=1;" target="m1v16" value="enmascara titular">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e32" edge="1" parent="1" source="m1v12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;dashed=1;exitX=1;exitY=0.85;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="m1v17" value="excepciones">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e33" edge="1" parent="1" source="m1v14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;dashed=1;exitX=0.25;exitY=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m1v11" value="genera ConsultaApi + DTOs&lt;br&gt;(openapi-generator-maven-plugin)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e34" edge="1" parent="1" source="m1v14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;dashed=1;exitX=0.75;exitY=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="m1v15" value="documenta">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1e35" edge="1" parent="1" source="m1v21" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=10;labelBackgroundColor=#ffffff;strokeColor=#b85450;" target="m1v20" value="lectura / escritura">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m1v36" parent="1" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#fffde7;strokeColor=#bfa600;align=left;spacingLeft=8;verticalAlign=top;fontSize=11;" value="&lt;b&gt;Leyenda&lt;/b&gt;&lt;br&gt;&lt;span style=&#39;color:#2D5AA0&#39;&gt;■&lt;/span&gt; Componente del módulo&lt;br&gt;&lt;span style=&#39;color:#d79b00&#39;&gt;■&lt;/span&gt; Servicio externo&lt;br&gt;&lt;span style=&#39;color:#b85450&#39;&gt;■&lt;/span&gt; Monolito heredado (no se modifica)&lt;br&gt;— — flecha punteada: solo lectura / dependencia" vertex="1">
+          <mxGeometry height="120" width="260" x="37" y="760" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
